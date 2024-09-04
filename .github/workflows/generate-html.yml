@@ -1,0 +1,44 @@
+name: Gerenate README.html
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - README.md
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+
+      - name: Install dependencies
+        run: npm i -g markdown-to-html-cli
+
+      - name: Convert .md to .html
+        run: markdown-to-html --source README.md --output README.html --title markdown-html-example --img-base64 --no-dark-mode
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6.1.0
+        with:
+          commit-message: "[bot] Update README.html"
+          title: "[bot] Update README.html"
+          body: "Automated update of README.html from README.md by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action"
+          labels: github-actions
+          delete-branch: true
+
+      - name: Merge Pull Request
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        run: gh pr merge --merge --auto ${{ steps.cpr.outputs.pull-request-number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
